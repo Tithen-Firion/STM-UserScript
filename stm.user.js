@@ -4,31 +4,36 @@
 // @include     https://steamcommunity.com/tradeoffer/new/*source=stm*
 // @include     http://www.steamtradematcher.com/*
 // @version     1.18
+// @grant       GM.getValue
+// @grant       GM.setValue
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
+// @grant       GM.deleteValue
 // @grant       GM_xmlhttpRequest
+// @grant       GM.xmlHttpRequest
 // @namespace   http://www.steamtradematcher.com
 // @icon        http://www.steamtradematcher.com/res/img/favicon.jpg
 // @updateURL   http://www.steamtradematcher.com/res/userscript/stm.user.js
+// @require     https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
 // @author      Tithen-Firion
 // ==/UserScript==
- 
+
 /*jslint browser:true*/
-/*global window,unsafeWindow,GM_getValue,GM_setValue,GM_deleteValue,GM_xmlhttpRequest,console */
- 
+/*global window,unsafeWindow,GM.getValue,GM.setValue,GM.deleteValue,GM.xmlHttpRequest,console */
+
 function getRandomInt(min, max) {
     "use strict";
     return Math.floor(Math.random() * (max - min)) + min;
 }
- 
+
 function mySort(a, b) {
     "use strict";
     return parseInt(b.id) - parseInt(a.id);
 }
- 
+
 ///// Steam functions /////
- 
+
 function restoreCookie(oldCookie) {
     "use strict";
     if (oldCookie) {
@@ -39,7 +44,7 @@ function restoreCookie(oldCookie) {
         document.cookie = 'strTradeLastInventoryContext=' + oldCookie + '; expires=' + now.toUTCString() + '; path=/tradeoffer/';
     }
 }
- 
+
 function addCards(g_s, g_v) {
     "use strict";
     var tmpCards, inv, index, currentCards;
@@ -83,12 +88,12 @@ function addCards(g_s, g_v) {
             }
         });
     });
-    
+
     if(failLater || document.querySelectorAll('#your_slots .has_item').length != document.querySelectorAll('#their_slots .has_item').length) {
         unsafeWindow.ShowAlertDialog('Items missing', 'Some items are missing and were not added to trade offer. Script aborting.');
         throw ('Cards missing');
     }
-    
+
     // check if item types match
     cardTypes[1].forEach(function (type) {
         index = cardTypes[0].indexOf(type);
@@ -118,7 +123,7 @@ function addCards(g_s, g_v) {
         unsafeWindow.CTradeOfferStateManager.ConfirmTradeOffer();
     }
 }
- 
+
 function checkContexts(g_s, g_v) {
     "use strict";
     var ready = 0;
@@ -136,7 +141,7 @@ function checkContexts(g_s, g_v) {
             }
         }
     });
- 
+
     if (ready === 2) {
         // select your inventory
         unsafeWindow.TradePageSelectInventory(g_v.Users[0], 753, "6");
@@ -153,7 +158,7 @@ function checkContexts(g_s, g_v) {
         window.setTimeout(checkContexts, 500, g_s, g_v);
     }
 }
- 
+
 function getUrlVars() {
     "use strict";
     var vars = [];
@@ -165,134 +170,144 @@ function getUrlVars() {
     });
     return vars;
 }
- 
+
 function checkEscrow(myOldEscrow, theirOldEscrow) {
     if(typeof(unsafeWindow.g_daysMyEscrow) !== "number" || typeof(unsafeWindow.g_daysTheirEscrow) !== "number")
         return;
     var myEscrow = (unsafeWindow.g_daysMyEscrow == 0 ? 0 : 1);
     var theirEscrow = (unsafeWindow.g_daysTheirEscrow == 0 ? 0 : 1);
     if(myEscrow != myOldEscrow || theirEscrow != theirOldEscrow) {
-        GM_xmlhttpRequest({
+        GM.xmlHttpRequest({
             method: "GET",
             // add unsafeWindow.UserYou.strSteamId if needed
             url: "http://www.steamtradematcher.com/ajax/updateEscrowStatus/"+myEscrow+"/"+unsafeWindow.UserThem.strSteamId+"/"+theirEscrow
         });
     }
 }
- 
+
 ///// STM functions /////
- 
+
 function restoreDefaultSettings() {
     "use strict";
     if (window.confirm('Are you sure you want to restore default settings?')) {
-        GM_deleteValue('MESSAGE');
-        GM_deleteValue('DO_AFTER_TRADE');
-        GM_deleteValue('ORDER');
-        GM_deleteValue('CHECK_ESCROW');
-        GM_deleteValue('AUTO_SEND');
+        GM.deleteValue('MESSAGE');
+        GM.deleteValue('DO_AFTER_TRADE');
+        GM.deleteValue('ORDER');
+        GM.deleteValue('CHECK_ESCROW');
+        GM.deleteValue('AUTO_SEND');
     }
     document.location.reload();
 }
 function saveSettings() {
     "use strict";
-    GM_setValue('MESSAGE', document.getElementById('trade-message').value);
-    GM_setValue('DO_AFTER_TRADE', document.getElementById('after-trade').value);
-    GM_setValue('ORDER', document.getElementById('cards-order').value);
-    GM_setValue('CHECK_ESCROW', document.getElementById('check-escrow').checked);
-    GM_setValue('AUTO_SEND', document.getElementById('auto-send').checked);
- 
+    GM.setValue('MESSAGE', document.getElementById('trade-message').value);
+    GM.setValue('DO_AFTER_TRADE', document.getElementById('after-trade').value);
+    GM.setValue('ORDER', document.getElementById('cards-order').value);
+    GM.setValue('CHECK_ESCROW', document.getElementById('check-escrow').checked);
+    GM.setValue('AUTO_SEND', document.getElementById('auto-send').checked);
+
     document.getElementById('alert').style.display = 'block';
     window.scroll(0, 0);
 }
- 
+
 function prepareSettings(g_s) {
     "use strict";
     var template = '<div class="panel panel-default"><div class="panel-heading">' +
             '<h3 class="panel-title">{T}</h3></div><div class="panel-body">{B}</div></div>';
     var content = document.getElementById('content');
- 
+
     var newHTML = '<div class="alert alert-success" id="alert" style="display:none">Your parameters have been saved.</div>';
     newHTML += template.replace('{T}', 'Script installed!').replace('{B}', '<p>Congratulations! SteamTrade Matcher\'s Userscript is up and running!</p>');
- 
+
     newHTML += template.replace('{T}', 'Trade offer message').replace('{B}', '<p>Custom text that will be included automatically with your trade offers created through STM while using this userscript. To remove this functionality, simply delete the text.</p><div><input type="text" name="trade-message" id="trade-message" class="form-control" value="' + g_s.MESSAGE + '"></div>');
- 
+
     newHTML += template.replace('{T}', 'Action after trade').replace('{B}', '<p>Determines what happens when you complete a trade offer.</p><ul><li><strong>Do nothing</strong>: Will do nothing more than the normal behavior.</li><li><strong>Close window</strong>: Will close the window after the trade offer is sent.</li><li><strong>Click OK</strong>: Will redirect you to the trade offers recap page.</li></ul><div class="option-block"><label for="after-trade">After trade...</label><select class="form-control" name="after-trade" id="after-trade"><option value="NOTHING">Do Nothing</option><option value="CLOSE_WINDOW">Close window</option><option value="CLICK_OK">Click OK</option></select></div>').replace(g_s.DO_AFTER_TRADE, g_s.DO_AFTER_TRADE + '" selected="');
- 
+
     newHTML += template.replace('{T}', 'Cards order').replace('{B}', '<p>Determines which card is added to trade.</p><ul><li><strong>Sorted</strong>: Will sort cards by their IDs before adding to trade. If you make several trade offers with the same card and one of them is accepted, the rest will have message "cards unavilable to trade".</li><li><strong>Random</strong>: Will add cards to trade randomly. If you make several trade offers and one of them is accepted, only some of them will be unavilable for trade.</li><li><strong>As is</strong>: Script doesn\'t change anything in order. Results vary depending on browser, steam servers, weather...</li></ul><div class="option-block"><label for="cards-order">Cards order</label><select class="form-control" name="cards-order" id="cards-order"><option value="SORT">Sorted</option><option value="RANDOM">Random</option><option value="AS_IS">As is</option></select></div>').replace(g_s.ORDER, g_s.ORDER + '" selected="');
- 
+
     newHTML += template.replace('{T}', 'Update users\' escrow status').replace('{B}', '<p>Help STM by sending escrow status of users you are trading with.</p><div class="checkbox"><label for="check-escrow"><input name="check-escrow" id="check-escrow" value="1" type="checkbox"' + (g_s.CHECK_ESCROW
         ? ' checked="checked"'
         : '') + '> Enable</label></div>');
- 
+
     newHTML += template.replace('{T}', 'Auto-send trade offer').replace('{B}', '<p>Makes it possible for the script to automatically send trade offers without any action on your side. This is not recommended as you should always check your trade offers, but, well, this is a possible thing. Please note that incomplete trade offers (missing cards, ...) won\'t be sent automatically even when this parameter is set to true.</p><div class="checkbox"><label for="auto-send"><input name="auto-send" id="auto-send" value="1" type="checkbox"' + (g_s.AUTO_SEND
         ? ' checked="checked"'
         : '') + '> Enable</label></div>');
- 
+
     newHTML += '<div id="save" style="margin-bottom:20px"><input class="btn btn-default btn-block" id="save-button" value="Save" type="submit"></div>';
     newHTML += '<div id="restore" style="margin-bottom:20px"><input class="btn btn-default btn-block" id="restore-button" value="Restore default settings" type="submit"></div>';
- 
+
     content.innerHTML = newHTML + content.innerHTML;
     document.getElementById('save').addEventListener("click", saveSettings, false);
     document.getElementById('restore').addEventListener("click", restoreDefaultSettings, false);
 }
- 
+
 ///// Main function /////
- 
+
 function main() {
     "use strict";
-    var global_settings = {
-        MESSAGE: GM_getValue('MESSAGE', 'SteamTrade Matcher'),
-        AUTO_SEND: GM_getValue('AUTO_SEND', false),
-        DO_AFTER_TRADE: GM_getValue('DO_AFTER_TRADE', 'NOTHING'),
-        ORDER: GM_getValue('ORDER', 'AS_IS'),
-        CHECK_ESCROW: GM_getValue('CHECK_ESCROW', true)
-    };
- 
-    if (window.location.host === "steamcommunity.com") {
-        // get classids from URL
-        var vars = getUrlVars();
-        if(global_settings.CHECK_ESCROW);
-            checkEscrow(vars.myEscrow, vars.theirEscrow);
-        
-        var Cards = [
-            (vars.you
-                ? vars.you.split(';')
-                : []),
-            (vars.them
-                ? vars.them.split(';')
-                : [])
-        ];
- 
-        if (Cards[0].length !== Cards[1].length) {
-            unsafeWindow.ShowAlertDialog(
-                'Different items amount',
-                'You\'ve requested ' + (Cards[0].length > Cards[1].length
-                    ? 'less'
-                    : 'more') + ' items than you give. Script aborting.'
-            );
-            throw ('Different items amount on both sides');
-        }
- 
-        // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
-        var oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
-        if (oldCookie) {
-            oldCookie = oldCookie.split(';')[0];
-        }
-        document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
- 
-        var Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
-        var global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
- 
-        window.setTimeout(checkContexts, 500, global_settings, global_vars);
-    } else if (window.location.host === "www.steamtradematcher.com") {
-        if(unsafeWindow.USinst == 0)
-            GM_xmlhttpRequest({
-                method: "GET",
-                url: "http://www.steamtradematcher.com/ajax/flagUS/1"
+    var global_settings = {};
+    GM.getValue('MESSAGE', 'SteamTrade Matcher').then((val)=>{
+        global_settings.MESSAGE = val;
+        GM.getValue('AUTO_SEND', false).then((val)=>{
+            global_settings.AUTO_SEND = val;
+            GM.getValue('DO_AFTER_TRADE', 'NOTHING').then((val)=>{
+                global_settings.DO_AFTER_TRADE = val;
+                GM.getValue('ORDER', 'AS_IS').then((val)=>{
+                    global_settings.ORDER = val;
+                    GM.getValue('CHECK_ESCROW', true).then((val)=>{
+                        global_settings.CHECK_ESCROW = val;
+
+                        if (window.location.host === "steamcommunity.com") {
+                            // get classids from URL
+                            var vars = getUrlVars();
+                            if(global_settings.CHECK_ESCROW);
+                            checkEscrow(vars.myEscrow, vars.theirEscrow);
+
+                            var Cards = [
+                                (vars.you
+                                 ? vars.you.split(';')
+                                 : []),
+                                (vars.them
+                                 ? vars.them.split(';')
+                                 : [])
+                            ];
+
+                            if (Cards[0].length !== Cards[1].length) {
+                                unsafeWindow.ShowAlertDialog(
+                                    'Different items amount',
+                                    'You\'ve requested ' + (Cards[0].length > Cards[1].length
+                                                            ? 'less'
+                                                            : 'more') + ' items than you give. Script aborting.'
+                                );
+                                throw ('Different items amount on both sides');
+                            }
+
+                            // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
+                            var oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
+                            if (oldCookie) {
+                                oldCookie = oldCookie.split(';')[0];
+                            }
+                            document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
+
+                            var Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
+                            var global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
+
+                            window.setTimeout(checkContexts, 500, global_settings, global_vars);
+                        } else if (window.location.host === "www.steamtradematcher.com") {
+                            if(unsafeWindow.USinst == 0)
+                                GM.xmlHttpRequest({
+                                    method: "GET",
+                                    url: "http://www.steamtradematcher.com/ajax/flagUS/1"
+                                });
+                            if(window.location.pathname === "/userscript")
+                                prepareSettings(global_settings);
+                        }
+
+                    });
+                });
             });
-        if(window.location.pathname === "/userscript")
-            prepareSettings(global_settings);
-    }
+        });
+    });
 }
 
 main();
