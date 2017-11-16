@@ -189,24 +189,28 @@ function checkEscrow(myOldEscrow, theirOldEscrow) {
 
 async function restoreDefaultSettings() {
     if (window.confirm('Are you sure you want to restore default settings?')) {
-        await GM.deleteValue('MESSAGE');
-        await GM.deleteValue('DO_AFTER_TRADE');
-        await GM.deleteValue('ORDER');
-        await GM.deleteValue('CHECK_ESCROW');
-        await GM.deleteValue('AUTO_SEND');
-    	  document.location.reload();
+        Promise.all([
+            GM.deleteValue('MESSAGE'),
+            GM.deleteValue('DO_AFTER_TRADE'),
+            GM.deleteValue('ORDER'),
+            GM.deleteValue('CHECK_ESCROW'),
+            GM.deleteValue('AUTO_SEND')
+        ]).then(()=>{
+    	      document.location.reload();
+        });
     }
 }
 function saveSettings() {
-    "use strict";
-    GM.setValue('MESSAGE', document.getElementById('trade-message').value);
-    GM.setValue('DO_AFTER_TRADE', document.getElementById('after-trade').value);
-    GM.setValue('ORDER', document.getElementById('cards-order').value);
-    GM.setValue('CHECK_ESCROW', document.getElementById('check-escrow').checked);
-    GM.setValue('AUTO_SEND', document.getElementById('auto-send').checked);
-
-    document.getElementById('alert').style.display = 'block';
-    window.scroll(0, 0);
+    Promise.all([
+        GM.setValue('MESSAGE', document.getElementById('trade-message').value),
+        GM.setValue('DO_AFTER_TRADE', document.getElementById('after-trade').value),
+        GM.setValue('ORDER', document.getElementById('cards-order').value),
+        GM.setValue('CHECK_ESCROW', document.getElementById('check-escrow').checked),
+        GM.setValue('AUTO_SEND', document.getElementById('auto-send').checked)
+    ]).then(()=>{
+        document.getElementById('alert').style.display = 'block';
+        window.scroll(0, 0);
+    });
 }
 
 function prepareSettings(g_s) {
@@ -244,57 +248,57 @@ function prepareSettings(g_s) {
 
 async function main() {
     var global_settings = {};
-  global_settings.MESSAGE = await GM.getValue('MESSAGE', 'SteamTrade Matcher');
-  global_settings.AUTO_SEND = await GM.getValue('AUTO_SEND', false);
-  global_settings.DO_AFTER_TRADE = await GM.getValue('DO_AFTER_TRADE', 'NOTHING');
-  global_settings.ORDER = await GM.getValue('ORDER', 'AS_IS');
-  global_settings.CHECK_ESCROW = await GM.getValue('CHECK_ESCROW', true);
+    global_settings.MESSAGE = await GM.getValue('MESSAGE', 'SteamTrade Matcher');
+    global_settings.AUTO_SEND = await GM.getValue('AUTO_SEND', false);
+    global_settings.DO_AFTER_TRADE = await GM.getValue('DO_AFTER_TRADE', 'NOTHING');
+    global_settings.ORDER = await GM.getValue('ORDER', 'AS_IS');
+    global_settings.CHECK_ESCROW = await GM.getValue('CHECK_ESCROW', true);
 
-  if (window.location.host === "steamcommunity.com") {
-    // get classids from URL
-    var vars = getUrlVars();
-    if(global_settings.CHECK_ESCROW);
-    checkEscrow(vars.myEscrow, vars.theirEscrow);
+    if (window.location.host === "steamcommunity.com") {
+      // get classids from URL
+      var vars = getUrlVars();
+      if(global_settings.CHECK_ESCROW);
+      checkEscrow(vars.myEscrow, vars.theirEscrow);
 
-    var Cards = [
-      (vars.you
-       ? vars.you.split(';')
-       : []),
-      (vars.them
-       ? vars.them.split(';')
-       : [])
-    ];
+      var Cards = [
+        (vars.you
+         ? vars.you.split(';')
+         : []),
+        (vars.them
+         ? vars.them.split(';')
+         : [])
+      ];
 
-    if (Cards[0].length !== Cards[1].length) {
-      unsafeWindow.ShowAlertDialog(
-        'Different items amount',
-        'You\'ve requested ' + (Cards[0].length > Cards[1].length
-                                ? 'less'
-                                : 'more') + ' items than you give. Script aborting.'
-      );
-      throw ('Different items amount on both sides');
+      if (Cards[0].length !== Cards[1].length) {
+        unsafeWindow.ShowAlertDialog(
+          'Different items amount',
+          'You\'ve requested ' + (Cards[0].length > Cards[1].length
+                                  ? 'less'
+                                  : 'more') + ' items than you give. Script aborting.'
+        );
+        throw ('Different items amount on both sides');
+      }
+
+      // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
+      var oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
+      if (oldCookie) {
+        oldCookie = oldCookie.split(';')[0];
+      }
+      document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
+
+      var Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
+      var global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
+
+      window.setTimeout(checkContexts, 500, global_settings, global_vars);
+    } else if (window.location.host === "www.steamtradematcher.com") {
+      if(unsafeWindow.USinst == 0)
+        GM.xmlHttpRequest({
+          method: "GET",
+          url: "http://www.steamtradematcher.com/ajax/flagUS/1"
+        });
+      if(window.location.pathname === "/userscript")
+        prepareSettings(global_settings);
     }
-
-    // clear cookie containing last opened inventory tab - prevents unwanted inventory loading (it will be restored later)
-    var oldCookie = document.cookie.split('strTradeLastInventoryContext=')[1];
-    if (oldCookie) {
-      oldCookie = oldCookie.split(';')[0];
-    }
-    document.cookie = 'strTradeLastInventoryContext=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/tradeoffer/';
-
-    var Users = [unsafeWindow.UserYou, unsafeWindow.UserThem];
-    var global_vars = {"Users": Users, "oldCookie": oldCookie, "Cards": Cards};
-
-    window.setTimeout(checkContexts, 500, global_settings, global_vars);
-  } else if (window.location.host === "www.steamtradematcher.com") {
-    if(unsafeWindow.USinst == 0)
-      GM.xmlHttpRequest({
-        method: "GET",
-        url: "http://www.steamtradematcher.com/ajax/flagUS/1"
-      });
-    if(window.location.pathname === "/userscript")
-      prepareSettings(global_settings);
-  }
 }
 
 main();
