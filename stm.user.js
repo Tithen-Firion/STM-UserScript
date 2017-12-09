@@ -259,7 +259,7 @@ async function main() {
         var vars = getUrlVars();
         if(global_settings.CHECK_ESCROW);
             checkEscrow(vars.myEscrow, vars.theirEscrow);
- 
+        
         var Cards = [
             (vars.you
                 ? vars.you.split(';')
@@ -297,8 +297,8 @@ async function main() {
                 url: "http://www.steamtradematcher.com/ajax/flagUS/1"
             });
         if(window.location.pathname === "/userscript")
-        prepareSettings(global_settings);
+            prepareSettings(global_settings);
     }
 }
  
-main(); 
+main();
