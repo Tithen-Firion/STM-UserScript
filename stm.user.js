@@ -4,18 +4,23 @@
 // @include     https://steamcommunity.com/tradeoffer/new/*source=stm*
 // @include     http://www.steamtradematcher.com/*
 // @version     1.18
+// @grant       GM.getValue
+// @grant       GM.setValue
 // @grant       GM_getValue
 // @grant       GM_setValue
 // @grant       GM_deleteValue
+// @grant       GM.deleteValue
 // @grant       GM_xmlhttpRequest
+// @grant       GM.xmlHttpRequest
 // @namespace   http://www.steamtradematcher.com
 // @icon        http://www.steamtradematcher.com/res/img/favicon.jpg
 // @updateURL   http://www.steamtradematcher.com/res/userscript/stm.user.js
+// @require     https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
 // @author      Tithen-Firion
 // ==/UserScript==
  
 /*jslint browser:true*/
-/*global window,unsafeWindow,GM_getValue,GM_setValue,GM_deleteValue,GM_xmlhttpRequest,console */
+/*global window,unsafeWindow,GM.*,console */
  
 function getRandomInt(min, max) {
     "use strict";
@@ -172,7 +177,7 @@ function checkEscrow(myOldEscrow, theirOldEscrow) {
     var myEscrow = (unsafeWindow.g_daysMyEscrow == 0 ? 0 : 1);
     var theirEscrow = (unsafeWindow.g_daysTheirEscrow == 0 ? 0 : 1);
     if(myEscrow != myOldEscrow || theirEscrow != theirOldEscrow) {
-        GM_xmlhttpRequest({
+        GM.xmlHttpRequest({
             method: "GET",
             // add unsafeWindow.UserYou.strSteamId if needed
             url: "http://www.steamtradematcher.com/ajax/updateEscrowStatus/"+myEscrow+"/"+unsafeWindow.UserThem.strSteamId+"/"+theirEscrow
@@ -182,27 +187,30 @@ function checkEscrow(myOldEscrow, theirOldEscrow) {
  
 ///// STM functions /////
  
-function restoreDefaultSettings() {
-    "use strict";
+async function restoreDefaultSettings() {
     if (window.confirm('Are you sure you want to restore default settings?')) {
-        GM_deleteValue('MESSAGE');
-        GM_deleteValue('DO_AFTER_TRADE');
-        GM_deleteValue('ORDER');
-        GM_deleteValue('CHECK_ESCROW');
-        GM_deleteValue('AUTO_SEND');
+        Promise.all([
+            GM.deleteValue('MESSAGE'),
+            GM.deleteValue('DO_AFTER_TRADE'),
+            GM.deleteValue('ORDER'),
+            GM.deleteValue('CHECK_ESCROW'),
+            GM.deleteValue('AUTO_SEND')
+        ]).then(()=>{
+    	      document.location.reload();
+        });
     }
-    document.location.reload();
 }
 function saveSettings() {
-    "use strict";
-    GM_setValue('MESSAGE', document.getElementById('trade-message').value);
-    GM_setValue('DO_AFTER_TRADE', document.getElementById('after-trade').value);
-    GM_setValue('ORDER', document.getElementById('cards-order').value);
-    GM_setValue('CHECK_ESCROW', document.getElementById('check-escrow').checked);
-    GM_setValue('AUTO_SEND', document.getElementById('auto-send').checked);
- 
-    document.getElementById('alert').style.display = 'block';
-    window.scroll(0, 0);
+    Promise.all([
+        GM.setValue('MESSAGE', document.getElementById('trade-message').value),
+        GM.setValue('DO_AFTER_TRADE', document.getElementById('after-trade').value),
+        GM.setValue('ORDER', document.getElementById('cards-order').value),
+        GM.setValue('CHECK_ESCROW', document.getElementById('check-escrow').checked),
+        GM.setValue('AUTO_SEND', document.getElementById('auto-send').checked)
+    ]).then(()=>{
+        document.getElementById('alert').style.display = 'block';
+        window.scroll(0, 0);
+    });
 }
  
 function prepareSettings(g_s) {
@@ -238,16 +246,14 @@ function prepareSettings(g_s) {
  
 ///// Main function /////
  
-function main() {
-    "use strict";
-    var global_settings = {
-        MESSAGE: GM_getValue('MESSAGE', 'SteamTrade Matcher'),
-        AUTO_SEND: GM_getValue('AUTO_SEND', false),
-        DO_AFTER_TRADE: GM_getValue('DO_AFTER_TRADE', 'NOTHING'),
-        ORDER: GM_getValue('ORDER', 'AS_IS'),
-        CHECK_ESCROW: GM_getValue('CHECK_ESCROW', true)
-    };
- 
+async function main() {
+    var global_settings = {};
+    global_settings.MESSAGE = await GM.getValue('MESSAGE', 'SteamTrade Matcher');
+    global_settings.AUTO_SEND = await GM.getValue('AUTO_SEND', false);
+    global_settings.DO_AFTER_TRADE = await GM.getValue('DO_AFTER_TRADE', 'NOTHING');
+    global_settings.ORDER = await GM.getValue('ORDER', 'AS_IS');
+    global_settings.CHECK_ESCROW = await GM.getValue('CHECK_ESCROW', true);
+
     if (window.location.host === "steamcommunity.com") {
         // get classids from URL
         var vars = getUrlVars();
@@ -286,7 +292,7 @@ function main() {
         window.setTimeout(checkContexts, 500, global_settings, global_vars);
     } else if (window.location.host === "www.steamtradematcher.com") {
         if(unsafeWindow.USinst == 0)
-            GM_xmlhttpRequest({
+            GM.xmlHttpRequest({
                 method: "GET",
                 url: "http://www.steamtradematcher.com/ajax/flagUS/1"
             });
@@ -294,5 +300,5 @@ function main() {
             prepareSettings(global_settings);
     }
 }
-
+ 
 main();
