@@ -3,7 +3,7 @@
 // @description Allows quicker trade offers by automatically adding cards as matched by STM
 // @include     https://steamcommunity.com/tradeoffer/new/*source=stm*
 // @include     http://www.steamtradematcher.com/*
-// @version     1.18
+// @version     1.19
 // @grant       GM.getValue
 // @grant       GM.setValue
 // @grant       GM_getValue
