@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name        SteamTrade Matcher Userscript - automatically add cards to trade
 // @description Allows quicker trade offers by automatically adding cards as matched by STM
-// @include     https://steamcommunity.com/tradeoffer/new/*source=stm*
-// @include     http://www.steamtradematcher.com/*
-// @version     1.19
+// @include     *://steamcommunity.com/tradeoffer/new/*source=stm*
+// @include     *://steamtradematcher.com/*
+// @connect     *://steamtradematcher.com/*
+// @version     1.19.1
 // @grant       GM.getValue
 // @grant       GM.setValue
 // @grant       GM_getValue
