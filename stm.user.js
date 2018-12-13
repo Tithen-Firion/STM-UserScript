@@ -74,7 +74,7 @@ function addCards(g_s, g_v) {
         }
         // add cards to trade in order given by STM
         requestedCards.forEach(function (classid) {
-            currentCards = tmpCards[classid]; // all cards from inventory with requested classid
+            currentCards = tmpCards[classid] || []; // all cards from inventory with requested classid
             if (currentCards.length === 0) {
                 failLater = true;
             } else {
