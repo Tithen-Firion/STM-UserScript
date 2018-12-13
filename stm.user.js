@@ -4,7 +4,7 @@
 // @match       *://steamcommunity.com/tradeoffer/new/*source=stm*
 // @match       *://*.steamtradematcher.com/*
 // @connect     steamtradematcher.com
-// @version     1.19.1
+// @version     1.19.2
 // @grant       GM.getValue
 // @grant       GM.setValue
 // @grant       GM_getValue
